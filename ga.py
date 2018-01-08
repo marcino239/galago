@@ -64,7 +64,7 @@ def fitness( b ):
     fit = np.sum( (Y - y) ** 2 )
     return fit
     
-def mate( herd ):
+def mate( herd, ELITE_RATIO, MUTATION_PROBABILITY ):
     esize = int( N * ELITE_RATIO )
     res = herd[ :esize ]
     
@@ -85,39 +85,46 @@ def mate( herd ):
     res = res + [ e for e in gen() ]
     return res
 
-# set the rand state
-np.random.seed( 0 )
+def run_optimisation( N=N,
+            MAX_EPOCHS=MAX_EPOCHS,
+            LARGE_VAL=LARGE_VAL,
+            ELITE_RATIO=ELITE_RATIO,
+            MUTATION_PROBABILITY=MUTATION_PROBABILITY,
+            diag=True, seed=None ):
 
-# algo
-#   1. generate initial population
-herd = [ random_gene() for i in range( N ) ]
+    # set the rand state
+    if seed is not None:
+        np.random.seed( 0 )
 
-# iterate over
-prev_best_gene = None
-prev_best_gene_fit = LARGE_VAL
+    # algo
+    #   1. generate initial population
+    herd = [ random_gene() for i in range( N ) ]
 
-perf = []
+    perf = []
 
-for epoch in range( MAX_EPOCHS ):
+    for epoch in range( MAX_EPOCHS ):
 
-    #   5. for each element calculate fitness
-    fit = list( map( fitness, herd ) )
+        #   5. for each element calculate fitness
+        fit = list( map( fitness, herd ) )
 
-    #   6. sort herd by fitness
-    keys = sorted( range( N ), key = lambda x: fit[ x ] )
-    herd = [ herd[ k ] for k in keys ]
+        #   6. sort herd by fitness
+        keys = sorted( range( N ), key = lambda x: fit[ x ] )
+        herd = [ herd[ k ] for k in keys ]
 
-    herd = mate( herd )
+        herd = mate( herd, ELITE_RATIO, MUTATION_PROBABILITY )
 
-    # pull best gene
-    best_gene = herd[ 0 ]
-    best_gene_fit = fit[ keys[0] ]
-    
-    perf.append( (epoch, best_gene_fit) )
-    
-    if best_gene_fit < prev_best_gene_fit:
-        prev_best_gene = best_gene
-        prev_best_gene_fit = best_gene_fit
+        # pull best gene
+        best_gene = herd[ 0 ]
+        best_gene_fit = fit[ keys[0] ]
+        
+        perf.append( (epoch, best_gene_fit) )
+        
+        # diagnostics
+        if diag:
+            print( '{0}:\t{1}\t{2},{3}'.format( epoch, best_gene_fit, *decode( best_gene ) ) )
 
-    # diagnostics
-    print( '{0}:\t{1}\t{2},{3}'.format( epoch, best_gene_fit, *decode( best_gene ) ) )
+    return herd[ 0 ], perf
+
+
+if __name__ == '__main__':
+    run_optimisation( seed = 0 )
